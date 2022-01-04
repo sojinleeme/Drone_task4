@@ -8,23 +8,19 @@ from .base import BaseDetector
 
 
 @DETECTORS.register_module()
-class TwoStageDetector(BaseDetector):
-    """Base class for two-stage detectors.
-
-    Two-stage detectors typically consisting of a region proposal network and a
-    task-specific regression head.
-    """
-
+class PersonFasterRCNN(BaseDetector):
     def __init__(self,
                  backbone,
                  neck=None,
                  rpn_head=None,
                  roi_head=None,
+                 triage_rpn_head=None,
+                 triage_roi_head=None,
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None,
                  init_cfg=None):
-        super(TwoStageDetector, self).__init__(init_cfg)
+        super(PersonFasterRCNN, self).__init__(init_cfg)
         if pretrained:
             warnings.warn('DeprecationWarning: pretrained is deprecated, '
                           'please use "init_cfg" instead')
@@ -49,6 +45,23 @@ class TwoStageDetector(BaseDetector):
             roi_head.pretrained = pretrained
             self.roi_head = build_head(roi_head)
 
+        if triage_rpn_head is not None:
+            triage_rpn_train_cfg = train_cfg.triage_rpn if train_cfg is not None else None
+            triage_rpn_head_ = triage_rpn_head.copy()
+            triage_rpn_head_.update(train_cfg=triage_rpn_train_cfg, test_cfg=test_cfg.triage_rpn)
+            self.triage_rpn_head = build_head(triage_rpn_head_)
+
+
+        if triage_roi_head is not None:
+            # update train and test cfg here for now
+            # TODO: refactor assigner & sampler
+            triage_rcnn_train_cfg = train_cfg.triage_rcnn if train_cfg is not None else None
+            triage_roi_head.update(train_cfg=triage_rcnn_train_cfg)
+            triage_roi_head.update(test_cfg=test_cfg.triage_rcnn)
+            triage_roi_head.pretrained = pretrained
+            self.triage_roi_head = build_head(triage_roi_head)
+
+
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
 
@@ -61,6 +74,16 @@ class TwoStageDetector(BaseDetector):
     def with_roi_head(self):
         """bool: whether the detector has a RoI head"""
         return hasattr(self, 'roi_head') and self.roi_head is not None
+
+    # @property
+    # def with_triage_rpn(self):
+    #     """bool: whether the detector has triage_RPN"""
+    #     return hasattr(self, 'triage_rpn_head') and self.triage_rpn_head is not None
+
+    @property
+    def with_triage_roi_head(self):
+        """bool: whether the detector has a triage_RoI head"""
+        return hasattr(self, 'triage_roi_head') and self.triage_roi_head is not None
 
     def extract_feat(self, img):
         """Directly extract features from the backbone+neck."""
@@ -84,7 +107,18 @@ class TwoStageDetector(BaseDetector):
         proposals = torch.randn(1000, 4).to(img.device)
         # roi_head
         roi_outs = self.roi_head.forward_dummy(x, proposals)
+
+        # triage_rpn
+        # if self.triage_with_rpn:
+        triage_rpn_outs = self.triage_rpn_head(x)
+        outs = outs + (triage_rpn_outs, )
+        triage_proposals = torch.randn(1000, 4).to(img.device)
+        # triage_roi_head
+        triage_roi_outs = self.triage_roi_head.forward_dummy(x, triage_proposals)
+
         outs = outs + (roi_outs, )
+        outs = outs + (triage_roi_outs, )
+
         return outs
 
     def forward_train(self,
@@ -124,11 +158,10 @@ class TwoStageDetector(BaseDetector):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        # img = img.float().cuda()
-        x = self.extract_feat(img)
+        x = self.extract_feat(img) # backbone -> neck
 
         losses = dict()
-
+        
         # RPN forward and loss
         if self.with_rpn:
             proposal_cfg = self.train_cfg.get('rpn_proposal',
@@ -144,12 +177,41 @@ class TwoStageDetector(BaseDetector):
             losses.update(rpn_losses)
         else:
             proposal_list = proposals
-
-        roi_losses = self.roi_head.forward_train(x, img_metas, proposal_list,
+        
+        bbox_results = self.roi_head.forward_train(x, img_metas, proposal_list,
                                                  gt_bboxes, gt_labels,
                                                  gt_bboxes_ignore, gt_masks,
                                                  **kwargs)
-        losses.update(roi_losses)
+
+        ######### After person region Extraction ###########
+        
+
+# bbox_results -> person region extraction -> rpn
+
+        # if self.triage_with_rpn:
+        # triage_proposal_cfg = self.train_cfg.get('rpn_proposal',
+        #                                     self.test_cfg.rpn)
+        # self.triage_rpn_head.set_bbox(bbox_results)
+        # import pdb; pdb.set_trace()
+        # triage_rpn_losses, triage_proposal_list = self.triage_rpn_head.forward_train(
+        #     x,
+        #     img_metas,
+        #     gt_bboxes,
+        #     gt_labels=None,
+        #     gt_bboxes_ignore=gt_bboxes_ignore,
+        #     proposal_cfg=proposal_cfg,
+        #     **kwargs)
+        # losses.update(triage_rpn_losses)
+        triage_proposal_list = proposal_list
+        
+        self.triage_roi_head.set_person_bbox(bbox_results)
+        triage_roi_loss = self.triage_roi_head.forward_train(x, img_metas, triage_proposal_list,
+                                                 gt_bboxes, gt_labels,
+                                                 gt_bboxes_ignore, gt_masks,
+                                                 **kwargs)
+        # import pdb; pdb.set_trace()
+
+        losses.update(triage_roi_loss) # 
 
         return losses
 
@@ -195,7 +257,7 @@ class TwoStageDetector(BaseDetector):
         return self.roi_head.aug_test(
             x, proposal_list, img_metas, rescale=rescale)
 
-    def onnx_export(self, img, img_metas):
+    def onnx_export(self, img, img_metas): # not implement for triage
 
         img_shape = torch._shape_as_tensor(img)[2:]
         img_metas[0]['img_shape_for_onnx'] = img_shape

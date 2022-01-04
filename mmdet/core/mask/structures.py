@@ -867,7 +867,7 @@ class PolygonMasks(BaseInstanceMasks):
         """Compute areas of masks.
 
         This func is modified from `detectron2
-        <https://github.com/facebookresearch/detectron2/blob/ffff8acc35ea88ad1cb1806ab0f00b4c1c5dbfd9/detectron2/structures/masks.py#L387>`_.
+
         The function only works with Polygons using the shoelace formula.
 
         Return:
@@ -885,7 +885,7 @@ class PolygonMasks(BaseInstanceMasks):
         """Compute the area of a component of a polygon.
 
         Using the shoelace formula:
-        https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates
+     
 
         Args:
             x (ndarray): x coordinates of the component
@@ -928,9 +928,7 @@ class PolygonMasks(BaseInstanceMasks):
 
         Adapted from [1]_
 
-        References:
-            .. [1] https://gitlab.kitware.com/computer-vision/kwimage/-/blob/928cae35ca8/kwimage/structs/polygon.py#L379  # noqa: E501
-
+    
         Example:
             >>> from mmdet.core.mask.structures import PolygonMasks
             >>> self = PolygonMasks.random()
@@ -979,7 +977,6 @@ class PolygonMasks(BaseInstanceMasks):
             angles = (angle_steps / k).cumsum() + rng.uniform(0, tau)
 
             # Convert high and low values to be wrt the standard normal range
-            # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
             low = 0
             high = 2 * radius
             mean = radius
@@ -1013,7 +1010,6 @@ class PolygonMasks(BaseInstanceMasks):
         def _order_vertices(verts):
             """
             References:
-                https://stackoverflow.com/questions/1709283/how-can-i-sort-a-coordinate-list-for-a-rectangle-counterclockwise
             """
             mlat = verts.T[0].sum() / len(verts)
             mlng = verts.T[1].sum() / len(verts)

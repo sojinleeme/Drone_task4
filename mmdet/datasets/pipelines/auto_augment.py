@@ -48,7 +48,6 @@ class AutoAugment:
     """Auto augmentation.
 
     This data augmentation is proposed in `Learning Data Augmentation
-    Strategies for Object Detection <https://arxiv.org/pdf/1906.11172>`_.
 
     TODO: Implement 'Shear', 'Sharpness' and 'Rotate' transforms
 

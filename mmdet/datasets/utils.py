@@ -7,7 +7,7 @@ from mmcv.runner.hooks import HOOKS, Hook
 
 from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets.pipelines import LoadAnnotations, LoadImageFromFile
-from mmdet.models.dense_heads import GARPNHead, RPNHead
+from mmdet.models.dense_heads import GARPNHead, RPNHead, Triage_RPNHead
 from mmdet.models.roi_heads.mask_heads import FusedSemanticHead
 
 
@@ -136,16 +136,19 @@ class NumClassCheckHook(Hook):
                  f'should be a tuple of str.'
                  f'Add comma if number of classes is 1 as '
                  f'CLASSES = ({dataset.CLASSES},)')
+
             for name, module in model.named_modules():
                 if hasattr(module, 'num_classes') and not isinstance(
                         module, (RPNHead, VGG, FusedSemanticHead, GARPNHead)):
+                    # if model.module.rpn_head.module_name == 'RPNHead': 
+                    #     continue
                     assert module.num_classes == len(dataset.CLASSES), \
                         (f'The `num_classes` ({module.num_classes}) in '
-                         f'{module.__class__.__name__} of '
-                         f'{model.__class__.__name__} does not matches '
-                         f'the length of `CLASSES` '
-                         f'{len(dataset.CLASSES)}) in '
-                         f'{dataset.__class__.__name__}')
+                        f'{module.__class__.__name__} of '
+                        f'{model.__class__.__name__} does not matches '
+                        f'the length of `CLASSES` '
+                        f'{len(dataset.CLASSES)}) in '
+                        f'{dataset.__class__.__name__}')
 
     def before_train_epoch(self, runner):
         """Check whether the training dataset is compatible with head.

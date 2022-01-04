@@ -65,7 +65,7 @@ def imagenet_vid_classes():
     ]
 
 
-def coco_classes():
+def coco_classes(): # person class - 0
     return [
         'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train',
         'truck', 'boat', 'traffic_light', 'fire_hydrant', 'stop_sign',
@@ -89,6 +89,15 @@ def cityscapes_classes():
         'bicycle'
     ]
 
+def person_classes():
+    return [
+        'person'
+    ]
+
+def triage_classes():
+    return [
+        '-1', '0', '1', '2', '3'
+    ]
 
 dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
@@ -96,7 +105,9 @@ dataset_aliases = {
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
     'coco': ['coco', 'mscoco', 'ms_coco'],
     'wider_face': ['WIDERFaceDataset', 'wider_face', 'WIDERFace'],
-    'cityscapes': ['cityscapes']
+    'cityscapes': ['cityscapes'],
+    'person': ['person'],
+    'triage': ['triage']
 }
 
 

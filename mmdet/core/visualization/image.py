@@ -93,7 +93,6 @@ def imshow_det_bboxes(img,
         if mask_color is None:
             # Get random state before set seed, and restore random state later.
             # Prevent loss of randomness.
-            # See: https://github.com/open-mmlab/mmdetection/issues/5844
             state = np.random.get_state()
             # random color
             np.random.seed(42)
@@ -121,7 +120,6 @@ def imshow_det_bboxes(img,
     canvas = fig.canvas
     dpi = fig.get_dpi()
     # add a small EPS to avoid precision lost due to matplotlib's truncation
-    # (https://github.com/matplotlib/matplotlib/issues/15363)
     fig.set_size_inches((width + EPS) / dpi, (height + EPS) / dpi)
 
     # remove white edges by set subplot margin
@@ -178,7 +176,6 @@ def imshow_det_bboxes(img,
         # We do not use cv2 for display because in some cases, opencv will
         # conflict with Qt, it will output a warning: Current thread
         # is not the object's thread. You can refer to
-        # https://github.com/opencv/opencv-python/issues/46 for details
         if wait_time == 0:
             plt.show()
         else:

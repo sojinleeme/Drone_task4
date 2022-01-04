@@ -223,7 +223,7 @@ class PatchEmbed(BaseModule):
                 input_w = input_w + pad_w
                 input_size = (input_h, input_w)
 
-            # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+
             h_out = (input_size[0] + 2 * padding[0] - dilation[0] *
                      (kernel_size[0] - 1) - 1) // stride[0] + 1
             w_out = (input_size[1] + 2 * padding[1] - dilation[1] *
@@ -547,7 +547,7 @@ class Transformer(BaseModule):
         * decoder returns a stack of activations from all decoding layers
 
     See `paper: End-to-End Object Detection with Transformers
-    <https://arxiv.org/pdf/2005.12872>`_ for details.
+
 
     Args:
         encoder (`mmcv.ConfigDict` | Dict): Config of
@@ -1057,7 +1057,7 @@ class DynamicConv(BaseModule):
 
     This module generate parameters for each sample and
     use bmm to implement 1*1 convolution. Code is modified
-    from the `official github repo <https://github.com/PeizeSun/
+
     SparseR-CNN/blob/main/projects/SparseRCNN/sparsercnn/head.py#L258>`_ .
 
     Args:

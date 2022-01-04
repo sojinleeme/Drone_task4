@@ -12,7 +12,7 @@ from .anchor_head import AnchorHead
 
 
 @HEADS.register_module()
-class RPNHead(AnchorHead):
+class Triage_RPNHead(AnchorHead):
     """RPN head.
 
     Args:
@@ -27,8 +27,7 @@ class RPNHead(AnchorHead):
                  num_convs=1,
                  **kwargs):
         self.num_convs = num_convs
-        self.module_name = "RPNHead"
-        super(RPNHead, self).__init__(
+        super(Triage_RPNHead, self).__init__(
             1, in_channels, init_cfg=init_cfg, **kwargs)
 
     def _init_layers(self):
@@ -60,13 +59,22 @@ class RPNHead(AnchorHead):
         self.rpn_reg = nn.Conv2d(self.feat_channels, self.num_base_priors * 4,
                                  1)
 
+    def set_bbox(self, bbox):
+        self.person_bbox = bbox
+        self.person_bbox_cls_score = self.person_bbox['cls_score']
+        self.person_bbox_pred = self.person_bbox['bbox_pred'] # torch.Size([1024, 4])
+        self.person_bbox_feats = self.person_bbox['bbox_feats'] # torch.Size([1024, 256, 7, 7]) 
+
     def forward_single(self, x):
         """Forward feature map of a single scale level."""
         # import pdb; pdb.set_trace()
-        x = self.rpn_conv(x)
-        x = F.relu(x, inplace=True)
-        rpn_cls_score = self.rpn_cls(x) # rpn_cls_score.shape = torch.Size([2, 3, 272, 200])
-        rpn_bbox_pred = self.rpn_reg(x) # rpn_bbox_pred.shape = torch.Size([2, 12, 272, 200])
+        
+        # x = self.rpn_conv(x)
+        # x = F.relu(x, inplace=True)
+
+        # x. shape torch.Size([2, 256, 272, 200])
+        rpn_cls_score = self.rpn_cls(x)
+        rpn_bbox_pred = self.rpn_reg(x)
         return rpn_cls_score, rpn_bbox_pred
 
     def loss(self,
@@ -92,7 +100,9 @@ class RPNHead(AnchorHead):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        losses = super(RPNHead, self).loss(
+        import pdb; pdb.set_trace()
+
+        losses = super(Triage_RPNHead, self).loss(
             cls_scores,
             bbox_preds,
             gt_bboxes,
@@ -251,7 +261,7 @@ class RPNHead(AnchorHead):
 
         assert len(cls_scores) == len(bbox_preds)
 
-        batch_bboxes, batch_scores = super(RPNHead, self).onnx_export(
+        batch_bboxes, batch_scores = super(Triage_RPNHead, self).onnx_export(
             cls_scores, bbox_preds, img_metas=img_metas, with_nms=False)
         # Use ONNX::NonMaxSuppression in deployment
         from mmdet.core.export import add_dummy_nms_for_onnx

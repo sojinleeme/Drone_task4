@@ -174,6 +174,8 @@ def main():
             mmdet_version=__version__ + get_git_hash()[:7],
             CLASSES=datasets[0].CLASSES)
     # add an attribute for visualization convenience
+    # import pdb; pdb.set_trace()
+
     model.CLASSES = datasets[0].CLASSES
     train_detector(
         model,

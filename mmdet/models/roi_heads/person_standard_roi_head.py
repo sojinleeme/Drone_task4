@@ -8,7 +8,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @HEADS.register_module()
-class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
+class Person_StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head."""
 
     def init_assigner_sampler(self):
@@ -97,14 +97,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                     gt_labels[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
-
         losses = dict()
         # bbox head forward and loss
         if self.with_bbox:
             bbox_results = self._bbox_forward_train(x, sampling_results,
                                                     gt_bboxes, gt_labels,
                                                     img_metas)
-            losses.update(bbox_results['loss_bbox'])
+            # losses.update(bbox_results['loss_bbox'])
 
         # mask head forward and loss
         if self.with_mask:
@@ -112,8 +111,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     bbox_results['bbox_feats'],
                                                     gt_masks, img_metas)
             losses.update(mask_results['loss_mask'])
-
-        return losses
+        # import pdb; pdb.set_trace()
+        # return losses
+        return bbox_results
 
     def _bbox_forward(self, x, rois):
         """Box head forward function used in both training and testing."""
@@ -123,7 +123,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
         cls_score, bbox_pred = self.bbox_head(bbox_feats)
-        # import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
@@ -134,13 +134,18 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
 
+        for i in range(len(gt_labels)):
+            gt_labels[i] = torch.zeros(gt_labels[i].shape, dtype=int).cuda()
+        # print(gt_labels)
+        # import pdb; pdb.set_trace()
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
-        loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
-                                        bbox_results['bbox_pred'], rois,
-                                        *bbox_targets)
-
-        bbox_results.update(loss_bbox=loss_bbox)
+        # import pdb; pdb.set_trace()
+        # loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],
+        #                                 bbox_results['bbox_pred'], rois,
+        #                                 *bbox_targets)
+        # import pdb; pdb.set_trace()
+        # bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,

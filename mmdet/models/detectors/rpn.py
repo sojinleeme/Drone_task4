@@ -112,6 +112,9 @@ class RPN(BaseDetector):
         if torch.onnx.is_in_onnx_export():
             return proposal_list
 
+        # mmcv.imshow_bboxes(img, proposal_list)
+        # import pdb; pdb.set_trace()
+
         return [proposal.cpu().numpy() for proposal in proposal_list]
 
     def aug_test(self, imgs, img_metas, rescale=False):

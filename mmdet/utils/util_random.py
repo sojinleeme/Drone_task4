@@ -20,10 +20,8 @@ def ensure_rng(rng=None):
     Returns:
         (numpy.random.RandomState) : rng -
             a numpy random number generator
-
-    References:
-        .. [1] https://gitlab.kitware.com/computer-vision/kwarray/blob/master/kwarray/util_random.py#L270  # noqa: E501
     """
+
 
     if rng is None:
         rng = np.random.mtrand._rand

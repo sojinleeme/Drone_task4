@@ -149,8 +149,8 @@ class BaseAnchorOptimizer:
 
 
 class YOLOKMeansAnchorOptimizer(BaseAnchorOptimizer):
-    r"""YOLO anchor optimizer using k-means. Code refer to `AlexeyAB/darknet.
-    <https://github.com/AlexeyAB/darknet/blob/master/src/detector.c>`_.
+    """YOLO anchor optimizer using k-means. Code refer to `AlexeyAB/darknet.
+
 
     Args:
         num_anchors (int) : Number of anchors.

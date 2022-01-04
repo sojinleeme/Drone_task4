@@ -262,7 +262,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                     img,
                     result,
                     score_thr=0.3,
-                    bbox_color=(72, 101, 241),
+                    bbox_color=(255, 0, 241),
                     text_color=(72, 101, 241),
                     mask_color=None,
                     thickness=2,
@@ -313,6 +313,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
             for i, bbox in enumerate(bbox_result)
         ]
         labels = np.concatenate(labels)
+
         # draw segmentation masks
         segms = None
         if segm_result is not None and len(labels) > 0:  # non empty
@@ -324,10 +325,142 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
         # if out_file specified, do not show image in window
         if out_file is not None:
             show = False
-        # draw bounding boxes
+        # draw bounding boxess
+
         img = imshow_det_bboxes(
             img,
             bboxes,
+            labels,
+            segms,
+            class_names=self.CLASSES,
+            score_thr=score_thr,
+            bbox_color=bbox_color,
+            text_color=text_color,
+            mask_color=mask_color,
+            thickness=thickness,
+            font_size=font_size,
+            win_name=win_name,
+            show=show,
+            wait_time=wait_time,
+            out_file=out_file)
+
+        if not (show or out_file):
+            return img
+
+
+    def show_result_postprocessing(self,
+                    img,
+                    result_triage,
+                    result_person,
+                    score_thr=0.3,
+                    bbox_color=(255, 0, 241),
+                    text_color=(72, 101, 241),
+                    mask_color=None,
+                    thickness=2,
+                    font_size=13,
+                    win_name='',
+                    show=False,
+                    wait_time=0,
+                    out_file=None):
+        """Draw `result` over `img`.
+
+        Args:
+            img (str or Tensor): The image to be displayed.
+            result (Tensor or tuple): The results to draw over `img`
+                bbox_result or (bbox_result, segm_result).
+            score_thr (float, optional): Minimum score of bboxes to be shown.
+                Default: 0.3.
+            bbox_color (str or tuple(int) or :obj:`Color`):Color of bbox lines.
+               The tuple of color should be in BGR order. Default: 'green'
+            text_color (str or tuple(int) or :obj:`Color`):Color of texts.
+               The tuple of color should be in BGR order. Default: 'green'
+            mask_color (None or str or tuple(int) or :obj:`Color`):
+               Color of masks. The tuple of color should be in BGR order.
+               Default: None
+            thickness (int): Thickness of lines. Default: 2
+            font_size (int): Font size of texts. Default: 13
+            win_name (str): The window name. Default: ''
+            wait_time (float): Value of waitKey param.
+                Default: 0.
+            show (bool): Whether to show the image.
+                Default: False.
+            out_file (str or None): The filename to write the image.
+                Default: None.
+
+        Returns:
+            img (Tensor): Only if not `show` or `out_file`
+        """
+        img = mmcv.imread(img)
+        img = img.copy()
+        if isinstance(result_triage, tuple):
+            bbox_result_triage, segm_result = result_triage
+            bbox_result_person, _ = result_person
+            if isinstance(segm_result, tuple):
+                segm_result = segm_result[0]  # ms rcnn
+        else:
+            bbox_result_triage, segm_result = result_triage, None
+            bbox_result_person, _ = result_person, None
+        result = []
+
+        # import pdb; pdb.set_trace()
+        # bboxes_triage = np.vstack(np.hstack([bbox_result_triage, bbox_result_person]))
+        bboxes_triage = np.vstack(bbox_result_triage)
+        bboxes_person = np.vstack(bbox_result_person)
+        # class-based NMS
+    
+        # import pdb; pdb.set_trace()
+        tag_is_in_person = [False for i in range(bboxes_triage.shape[0])]
+        for i in range(bboxes_person.shape[0]):       
+            person_pos = bboxes_person[i][:4] # each person has one or no triage tag.
+            is_exist_pos = []
+            max_score = -1
+            if bboxes_person[i][-1] < 0.5: continue
+            for j in range(bboxes_triage.shape[0]):
+                triage_pos = bboxes_triage[j][:4]
+                if(triage_pos[0] >= person_pos[0]-50 and triage_pos[1] >= person_pos[1]-50 and triage_pos[2] <= person_pos[2]+50 and triage_pos[3] <= person_pos[3]+50):
+                    is_exist_pos.append(j)
+                    tag_is_in_person[j] = True
+                    if bboxes_triage[j][-1] > max_score: 
+                        max_score = bboxes_triage[j][-1]
+            for k in range(len(is_exist_pos)):
+                if bboxes_triage[is_exist_pos[k]][-1] < max_score:
+                   bboxes_triage[is_exist_pos[k]][-1] = 0 
+
+        for i in range(bboxes_triage.shape[0]):
+            if tag_is_in_person[i] == False:
+                bboxes_triage[i][-1] = 0
+
+
+            
+
+        # bboxes_postprocessing = np.vstack(np.hstack([bbox_result_triage, bbox_result_person]))
+
+        # bboxes_postprocessing
+
+        labels = [
+            np.full(bbox.shape[0], i, dtype=np.int32)
+            for i, bbox in enumerate(bbox_result_triage)
+        ]
+        labels = np.concatenate(labels)
+        
+
+        # draw segmentation masks
+        segms = None
+        if segm_result is not None and len(labels) > 0:  # non empty
+            segms = mmcv.concat_list(segm_result)
+            if isinstance(segms[0], torch.Tensor):
+                segms = torch.stack(segms, dim=0).detach().cpu().numpy()
+            else:
+                segms = np.stack(segms, axis=0)
+
+        # if out_file specified, do not show image in window
+        if out_file is not None:
+            show = False
+        # draw bounding boxess
+
+        img = imshow_det_bboxes(
+            img,
+            bboxes_triage,
             labels,
             segms,
             class_names=self.CLASSES,

@@ -97,7 +97,6 @@ def _get_global_gloo_group():
 def all_reduce_dict(py_dict, op='sum', group=None, to_float=True):
     """Apply all reduce function for python dict object.
 
-    The code is modified from https://github.com/Megvii-
     BaseDetection/YOLOX/blob/main/yolox/utils/allreduce_norm.py.
 
     NOTE: make sure that py_dict in different ranks has the same keys and

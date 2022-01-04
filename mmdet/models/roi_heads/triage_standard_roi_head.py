@@ -8,7 +8,7 @@ from .test_mixins import BBoxTestMixin, MaskTestMixin
 
 
 @HEADS.register_module()
-class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
+class Triage_StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
     """Simplest base roi head including one bbox head and one mask head."""
 
     def init_assigner_sampler(self):
@@ -50,6 +50,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             mask_results = self._mask_forward(x, mask_rois)
             outs = outs + (mask_results['mask_pred'], )
         return outs
+    def set_person_bbox(self, person_bbox):
+        self.person_bbox = person_bbox
 
     def forward_train(self,
                       x,
@@ -126,7 +128,27 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         # import pdb; pdb.set_trace()
         bbox_results = dict(
             cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
+        
+        import pdb; pdb.set_trace()
+        for i in range(len(bbox_results['bbox_pred'])):
+            num = len(len(bbox_results['bbox_pred'])) / len(self.person_bbox['bbox_pred'])
+            # y1, x1, y2, x2
+            pos_person = self.person_bbox['bbox_pred'][i]
+
+            for j in range(num):
+                pos_triage = bbox_results['bbox_pred'][i][j*4:(j+1)*4]
+
+                is_person_region = _bbox_person_region(pos_person, pos_triage)
+                if is_person_region == False:
+                    bbox_results['cls_score']
+        # compare person_bbox and triage bbox_results
+
+
+
         return bbox_results
+
+    # def _bbox_person_region(self, pos_person, pos_triage):
+
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):

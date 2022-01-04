@@ -182,7 +182,7 @@ class BBoxHead(BaseModule):
             bbox_weights[:num_pos, :] = 1
         if num_neg > 0:
             label_weights[-num_neg:] = 1.0
-
+        # import pdb; pdb.set_trace()
         return labels, label_weights, bbox_targets, bbox_weights
 
     def get_targets(self,
